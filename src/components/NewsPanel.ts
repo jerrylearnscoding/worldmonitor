@@ -347,7 +347,7 @@ export class NewsPanel extends Panel {
         <div class="item-time">
           ${formatTime(item.pubDate)}
           ${getCurrentLanguage() !== 'en' ? `<button class="item-translate-btn" title="Translate" data-text="${escapeHtml(item.title)}">文</button>` : ''}
-          <button class="cb-news-btn" data-title="${escapeHtml(item.title)}" data-url="${sanitizeUrl(item.link)}" data-id="${escapeHtml(btoa(item.title.slice(0,40)))}" title="Clawberg策略" onclick="window.__cbShow(this)">🤖</button>
+          <button class="cb-news-btn" data-title="${escapeHtml(item.title)}" data-url="${sanitizeUrl(item.link)}" data-id="${escapeHtml(item.title.slice(0,12).replace(/[^a-z0-9]/gi,''))}" title="Clawberg策略">🤖</button>
         </div>
       </div>
     `
