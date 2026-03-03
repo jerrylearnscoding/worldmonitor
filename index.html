@@ -275,6 +275,18 @@
       this.textContent='确认下单';this.disabled=false;
     };
     document.addEventListener('keydown',function(e){if(e.key==='Escape')document.getElementById('cb-trade').style.display='none';});
+    // Handle inline trade buttons injected by TypeScript (event delegation)
+    document.addEventListener('click',function(e){
+      var btn=e.target.closest('.cb-inline-trade-btn');
+      if(!btn)return;
+      e.stopPropagation();
+      try{
+        var s=JSON.parse(btn.dataset.strategy||'{}');
+        var id=btn.dataset.id||'';
+        var title=btn.dataset.title||'';
+        if(s&&s.asset)window.__cbOpenTrade(s,id,title);
+      }catch(ex){console.error('cb-inline-trade-btn parse error',ex);}
+    });
   })();
   </script>
 
