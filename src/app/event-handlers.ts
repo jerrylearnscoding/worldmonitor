@@ -219,7 +219,7 @@ export class EventHandlerManager implements AppModule {
     });
 
     const isLocalDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-    if (this.ctx.isDesktopApp || isLocalDev) {
+    if (true) { // clawberg: always enable in-page variant switching
       this.ctx.container.querySelectorAll<HTMLAnchorElement>('.variant-option').forEach(link => {
         link.addEventListener('click', (e) => {
           const variant = link.dataset.variant;
