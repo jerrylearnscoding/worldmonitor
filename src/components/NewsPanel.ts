@@ -121,9 +121,9 @@ export class NewsPanel extends Panel {
     // Create summarize button
     this.summaryBtn = document.createElement('button');
     this.summaryBtn.className = 'panel-summarize-btn';
-    this.summaryBtn.innerHTML = '✨';
-    this.summaryBtn.title = t('components.newsPanel.summarize');
-    this.summaryBtn.addEventListener('click', () => this.handleSummarize());
+    this.summaryBtn.innerHTML = '🤖';
+    this.summaryBtn.title = 'Clawberg 策略分析';
+    this.summaryBtn.addEventListener('click', () => this.handleClawberg());
 
     // Insert before count element (use inherited this.header directly)
     const countEl = this.header.querySelector('.panel-count');
@@ -134,50 +134,70 @@ export class NewsPanel extends Panel {
     }
   }
 
-  private async handleSummarize(): Promise<void> {
+  private async handleClawberg(): Promise<void> {
     if (this.isSummarizing || !this.summaryContainer || !this.summaryBtn) return;
-    if (this.currentHeadlines.length === 0) return;
 
-    // Check cache first (include variant, version, and language)
-    const currentLang = getCurrentLanguage();
-    const cacheKey = `panel_summary_v3_${SITE_VARIANT}_${this.panelId}_${currentLang}`;
-    const cached = this.getCachedSummary(cacheKey);
-    if (cached) {
-      this.showSummary(cached);
-      return;
-    }
+    // Pick the top headline from this panel to trigger Clawberg
+    const items = this.content.querySelectorAll<HTMLElement>('.item');
+    const firstItem = items[0];
+    if (!firstItem) return;
 
-    // Show loading state
+    // Find the 🤖 button in first visible item, or just trigger on panel headlines
+    const titleEl = firstItem.querySelector<HTMLAnchorElement>('a.item-title');
+    if (!titleEl) return;
+
+    const title = (titleEl.textContent || '').trim();
+    const url = titleEl.href || '';
+    const clusterId = firstItem.dataset.clusterId;
+    const id = clusterId || btoa(encodeURIComponent(title.slice(0, 40))).replace(/[^a-z0-9]/gi, '').slice(0, 14);
+
+    // Show loading in summary container
     this.isSummarizing = true;
     this.summaryBtn.innerHTML = '<span class="panel-summarize-spinner"></span>';
     this.summaryBtn.disabled = true;
     this.summaryContainer.style.display = 'block';
-    this.summaryContainer.innerHTML = `<div class="panel-summary-loading">${t('components.newsPanel.generatingSummary')}</div>`;
-
-    const sigAtStart = this.lastHeadlineSignature;
+    this.summaryContainer.innerHTML = '<div class="panel-summary-loading">🤖 Clawberg 生成策略中...</div>';
 
     try {
-      const result = await generateSummary(this.currentHeadlines.slice(0, 8), undefined, this.panelId, currentLang);
-      if (!this.element?.isConnected) return;
-      if (this.lastHeadlineSignature !== sigAtStart) {
-        this.hideSummary();
-        return;
-      }
-      if (result?.summary) {
-        this.setCachedSummary(cacheKey, result.summary);
-        this.showSummary(result.summary);
+      // Submit to Clawberg if not already there
+      await fetch('/api/clawberg-submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, title, url: url || 'https://worldmonitor-clawberg.vercel.app/#' + id, agentId: 'worldmonitor', sourceType: 'media' })
+      }).catch(() => {});
+
+      // Get strategy
+      const r = await fetch('/api/clawberg-strategy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, force: false })
+      });
+      const d = await r.json();
+
+      if (d.strategy) {
+        const s = d.strategy;
+        const dir = s.direction === 'long' ? '🟢 做多' : '🔴 做空';
+        const alts = s.alternates?.length ? ' | 备选: ' + s.alternates.map((a: {direction:string,asset:string}) => (a.direction === 'long' ? '🟢' : '🔴') + ' ' + a.asset).join(' ') : '';
+        this.summaryContainer.innerHTML = `
+          <div class="panel-summary-content" style="font-size:12px;color:#e0e0ff">
+            <span style="margin-right:10px">${dir} <b>${s.asset}</b></span>
+            <span style="color:#aaa;margin-right:10px">止损 ${s.stopLoss} · 目标 ${s.takeProfit} · ${s.confidence}</span>
+            <span style="color:#555">${alts}</span>
+            <br><span style="color:#555;font-size:11px">💡 ${s.rationale}</span>
+            <button onclick="window.__cbOpenTrade && window.__cbOpenTrade(${JSON.stringify(s).replace(/"/g,'&quot;')}, '${id.replace(/'/g, '')}', '${title.replace(/'/g, '').replace(/"/g, '').slice(0, 50)}')"
+              style="margin-left:10px;background:#1a0d2e;border:1px solid #a855f7;color:#c084fc;padding:3px 10px;border-radius:4px;cursor:pointer;font-size:11px">⚡ 下单</button>
+          </div>`;
       } else {
-        this.summaryContainer.innerHTML = '<div class="panel-summary-error">Could not generate summary</div>';
+        this.summaryContainer.innerHTML = '<div class="panel-summary-error">⚠️ 无法生成策略</div>';
         setTimeout(() => this.hideSummary(), 3000);
       }
-    } catch {
-      if (!this.element?.isConnected) return;
-      this.summaryContainer.innerHTML = '<div class="panel-summary-error">Summary failed</div>';
+    } catch (err) {
+      this.summaryContainer.innerHTML = '<div class="panel-summary-error">❌ Clawberg 请求失败</div>';
       setTimeout(() => this.hideSummary(), 3000);
     } finally {
       this.isSummarizing = false;
       if (this.summaryBtn) {
-        this.summaryBtn.innerHTML = '✨';
+        this.summaryBtn.innerHTML = '🤖';
         this.summaryBtn.disabled = false;
       }
     }
