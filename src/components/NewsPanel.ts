@@ -12,8 +12,7 @@ import { t, getCurrentLanguage } from '@/services/i18n';
 /** Threshold for enabling virtual scrolling */
 const VIRTUAL_SCROLL_THRESHOLD = 15;
 
-/** Summary cache TTL in milliseconds (10 minutes) */
-const SUMMARY_CACHE_TTL = 10 * 60 * 1000;
+// const SUMMARY_CACHE_TTL = 10 * 60 * 1000; // unused after clawberg refactor
 
 /** Prepared cluster data for rendering */
 interface PreparedCluster {
