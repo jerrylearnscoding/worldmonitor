@@ -240,17 +240,6 @@ export class NewsPanel extends Panel {
     }
   }
 
-  private showSummary(summary: string): void {
-    if (!this.summaryContainer || !this.element?.isConnected) return;
-    this.summaryContainer.style.display = 'block';
-    this.summaryContainer.innerHTML = `
-      <div class="panel-summary-content">
-        <span class="panel-summary-text">${escapeHtml(summary)}</span>
-        <button class="panel-summary-close" title="${t('components.newsPanel.close')}" aria-label="${t('components.newsPanel.close')}">×</button>
-      </div>
-    `;
-    this.summaryContainer.querySelector('.panel-summary-close')?.addEventListener('click', () => this.hideSummary());
-  }
 
   private hideSummary(): void {
     if (!this.summaryContainer) return;
@@ -272,29 +261,7 @@ export class NewsPanel extends Panel {
     }
   }
 
-  private getCachedSummary(key: string): string | null {
-    try {
-      const cached = localStorage.getItem(key);
-      if (!cached) return null;
-      const parsed = JSON.parse(cached);
-      if (!parsed.headlineSignature) { localStorage.removeItem(key); return null; }
-      if (parsed.headlineSignature !== this.lastHeadlineSignature) return null;
-      if (Date.now() - parsed.timestamp > SUMMARY_CACHE_TTL) { localStorage.removeItem(key); return null; }
-      return parsed.summary;
-    } catch {
-      return null;
-    }
-  }
 
-  private setCachedSummary(key: string, summary: string): void {
-    try {
-      localStorage.setItem(key, JSON.stringify({
-        headlineSignature: this.lastHeadlineSignature,
-        summary,
-        timestamp: Date.now(),
-      }));
-    } catch { /* storage full */ }
-  }
 
   public setDeviation(zScore: number, percentChange: number, level: DeviationLevel): void {
     if (!this.deviationEl) return;
