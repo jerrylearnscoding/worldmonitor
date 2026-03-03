@@ -210,20 +210,54 @@
 
 
 
-  <!-- Clawberg Trade Modal -->
+
+  <!-- Clawberg Trade Modal + Strategy Panel -->
   <style>
-    #cb-trade{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center}
-    #cb-trade .box{background:#0a0a0f;border:1px solid #2a2a5e;border-radius:12px;padding:22px;width:360px;color:#e0e0ff;font:13px system-ui,sans-serif}
-    #cb-trade h3{margin:0 0 12px;font-size:14px;color:#fff}
-    #cb-trade input,#cb-trade select{width:100%;background:#111122;border:1px solid #222244;color:#e0e0ff;padding:8px 10px;border-radius:6px;margin-bottom:10px;font-size:13px;box-sizing:border-box}
-    #cb-trade label{color:#555;font-size:11px;display:block;margin-bottom:4px}
-    #cb-trade .btns{display:flex;gap:8px;margin-top:6px}
-    #cb-trade .ok-btn{flex:1;background:#a855f7;color:#fff;border:none;padding:10px;border-radius:7px;cursor:pointer;font-weight:600;font-size:13px}
-    #cb-trade .no-btn{flex:1;background:#1a1a2e;color:#888;border:1px solid #333;padding:10px;border-radius:7px;cursor:pointer}
-    #cb-trade .res{margin-top:10px;padding:8px;border-radius:6px;font-size:12px;display:none}
-    #cb-trade .res.ok{background:#0d1a0d;color:#4ade80}
-    #cb-trade .res.err{background:#1a0d0d;color:#f87171}
+    /* Panel-level 🤖 button (in header) */
+    .panel-summarize-btn { font-size: 13px !important; }
+    /* Item-level 🤖 button */
+    .cb-news-btn { background: none; border: none; cursor: pointer; font-size: 12px; padding: 1px 3px; opacity: 0; transition: opacity .12s; vertical-align: middle; margin-left: 4px; }
+    .item:hover .cb-news-btn { opacity: 1; }
+    /* Strategy popup */
+    #cb-popup { position: fixed; z-index: 99999; width: 320px; background: #0a0a0f; border: 1px solid #2a2a5e; border-radius: 10px; box-shadow: 0 8px 40px rgba(80,40,200,.35); padding: 14px; display: none; color: #e0e0ff; font: 12px system-ui,sans-serif; pointer-events: auto; }
+    #cb-popup .cbh { font-size: 10px; color: #555; margin-bottom: 8px; display: flex; justify-content: space-between; letter-spacing: 1px; }
+    #cb-popup .cbt { font-size: 12px; color: #888; margin-bottom: 10px; line-height: 1.4; max-height: 36px; overflow: hidden; }
+    #cb-popup .cbg { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-bottom: 8px; }
+    #cb-popup .cbc { background: #111122; border-radius: 5px; padding: 5px 7px; }
+    #cb-popup .cbc .l { font-size: 9px; color: #444; margin-bottom: 2px; text-transform: uppercase; }
+    #cb-popup .cbc .v { font-size: 12px; font-weight: 700; }
+    .cb-long{color:#4ade80}.cb-short{color:#f87171}
+    #cb-popup .cbr { font-size: 11px; color: #555; margin-bottom: 10px; line-height: 1.4; border-left: 2px solid #222; padding-left: 7px; }
+    #cb-popup .cba { display: flex; gap: 6px; }
+    #cb-popup .cb-tbtn { flex: 1; background: #1a0d2e; border: 1px solid #a855f7; color: #c084fc; padding: 7px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; }
+    #cb-popup .cb-rbtn { background: #111; border: 1px solid #333; color: #666; padding: 7px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; }
+    #cb-popup .cb-x { cursor: pointer; color: #333; font-size: 14px; padding: 2px 5px; }
+    #cb-popup .cb-load { text-align: center; color: #444; padding: 18px 0; font-size: 12px; }
+    .cb-cl{color:#f59e0b}.cb-cm{color:#60a5fa}.cb-ch{color:#4ade80}
+    /* Trade modal */
+    #cb-trade { position: fixed; inset: 0; z-index: 100000; background: rgba(0,0,0,.85); display: none; align-items: center; justify-content: center; }
+    #cb-trade .box { background: #0a0a0f; border: 1px solid #2a2a5e; border-radius: 12px; padding: 22px; width: 360px; color: #e0e0ff; font: 13px system-ui,sans-serif; }
+    #cb-trade h3 { margin: 0 0 12px; font-size: 14px; color: #fff; }
+    #cb-trade input,#cb-trade select { width: 100%; background: #111122; border: 1px solid #222244; color: #e0e0ff; padding: 8px 10px; border-radius: 6px; margin-bottom: 10px; font-size: 13px; box-sizing: border-box; }
+    #cb-trade label { color: #555; font-size: 11px; display: block; margin-bottom: 4px; }
+    #cb-trade .btns { display: flex; gap: 8px; margin-top: 6px; }
+    #cb-trade .ok-btn { flex: 1; background: #a855f7; color: #fff; border: none; padding: 10px; border-radius: 7px; cursor: pointer; font-weight: 600; font-size: 13px; }
+    #cb-trade .no-btn { flex: 1; background: #1a1a2e; color: #888; border: 1px solid #333; padding: 10px; border-radius: 7px; cursor: pointer; }
+    #cb-trade .res { margin-top: 10px; padding: 8px; border-radius: 6px; font-size: 12px; display: none; }
+    #cb-trade .res.ok { background: #0d1a0d; color: #4ade80; }
+    #cb-trade .res.err { background: #1a0d0d; color: #f87171; }
   </style>
+
+  <div id="cb-popup">
+    <div class="cbh"><span>🤖 CLAWBERG SIGNAL</span><span class="cb-x" id="cb-px">✕</span></div>
+    <div class="cbt" id="cb-pt"></div>
+    <div id="cb-pb"><div class="cb-load">载入中...</div></div>
+    <div class="cba" id="cb-pa" style="display:none">
+      <button class="cb-rbtn" id="cb-pre">🔄</button>
+      <button class="cb-tbtn" id="cb-ptr">⚡ 下单</button>
+    </div>
+  </div>
+
   <div id="cb-trade">
     <div class="box">
       <h3>⚡ Clawberg 下单</h3>
@@ -238,14 +272,69 @@
       <div id="cb-res" class="res"></div>
     </div>
   </div>
+
   <script>
   (function(){
-    var T='/api/clawberg-trade';
-    var newsId='',newsTitle='';
+    var S='/api/clawberg-strategy', T='/api/clawberg-trade';
+    var strat=null, newsId='', newsTitle='', newsUrl='';
+    var popup=document.getElementById('cb-popup');
+    var pb=document.getElementById('cb-pb');
+    var pa=document.getElementById('cb-pa');
+    var pt=document.getElementById('cb-pt');
+
     function keys(){return{ak:localStorage.getItem('cb_ak')||'',as:localStorage.getItem('cb_as')||'',tn:localStorage.getItem('cb_tn')==='true'}}
 
+    function showPopup(anchorEl, title, id, url){
+      newsId=id; newsTitle=title; newsUrl=url||'';
+      pt.textContent=title.slice(0,90);
+      pb.innerHTML='<div class="cb-load">📡 生成策略中...</div>';
+      pa.style.display='none'; popup.style.display='block';
+      var r=anchorEl.getBoundingClientRect(), fw=320, fh=340;
+      var l=r.left-fw-10, t=r.top-10;
+      if(l<10)l=r.right+10;
+      if(l+fw>window.innerWidth-10)l=window.innerWidth-fw-10;
+      if(t+fh>window.innerHeight-10)t=window.innerHeight-fh-10;
+      if(t<10)t=10;
+      popup.style.left=l+'px'; popup.style.top=t+'px';
+      go(id,false,title,url);
+    }
+
+    function hidePopup(){ popup.style.display='none'; strat=null; }
+
+    async function submit(title,id,url){
+      try{
+        await fetch('/api/clawberg-submit',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({id,title,url:url||'https://worldmonitor-clawberg.vercel.app/#'+id,agentId:'worldmonitor',sourceType:'media'})});
+      }catch(e){}
+    }
+
+    async function go(id,force,title,url){
+      try{
+        var r=await fetch(S,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,force})});
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        var d=await r.json();
+        if(d.strategy){strat=d.strategy;renderStrat(d.strategy);return;}
+        pb.innerHTML='<div class="cb-load">📤 提交到Clawberg...</div>';
+        await submit(title||id,id,url);
+        var r2=await fetch(S,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,force:true})});
+        var d2=await r2.json();
+        if(d2.strategy){strat=d2.strategy;renderStrat(d2.strategy);}
+        else pb.innerHTML='<div class="cb-load" style="color:#f59e0b">⚠️ 无法生成策略</div>';
+      }catch(e){pb.innerHTML='<div class="cb-load" style="color:#f87171">❌ '+e.message+'</div>';}
+    }
+
+    function renderStrat(s){
+      var dir=s.direction==='long'?'<span class="cb-long">🟢 做多</span>':'<span class="cb-short">🔴 做空</span>';
+      var cf=s.confidence||'';
+      var cl='cb-c'+(cf[0]||'m');
+      var conf='<span class="'+cl+'">'+cf+'</span>';
+      var alts=s.alternates&&s.alternates.length?'<div style="font-size:11px;color:#444;margin-bottom:8px">备选: '+s.alternates.map(function(a){return(a.direction==='long'?'🟢':'🔴')+' '+a.asset}).join(' ')+'</div>':'';
+      pb.innerHTML='<div class="cbg"><div class="cbc"><div class="l">标的</div><div class="v">'+s.asset+'</div></div><div class="cbc"><div class="l">方向</div><div class="v">'+dir+'</div></div><div class="cbc"><div class="l">信心</div><div class="v">'+conf+'</div></div><div class="cbc"><div class="l">止损</div><div class="v">'+s.stopLoss+'</div></div><div class="cbc"><div class="l">目标</div><div class="v">'+s.takeProfit+'</div></div><div class="cbc"><div class="l">持仓</div><div class="v">'+s.holdDuration+'</div></div></div>'+alts+'<div class="cbr">💡 '+s.rationale+'</div>';
+      pa.style.display='flex';
+    }
+
+    // Panel 🤖 button exposes result via __cbPanelResult (called from handleClawberg's inline btn)
     window.__cbOpenTrade=function(s,id,title){
-      newsId=id; newsTitle=title;
       var k=keys();
       document.getElementById('cb-ts').innerHTML=(s.direction==='long'?'🟢 做多':'🔴 做空')+' <b>'+s.asset+'</b> · 止损 '+s.stopLoss+' · 目标 '+s.takeProfit;
       var sym=s.asset.replace(/[\/\-]/g,'');
@@ -254,10 +343,19 @@
       if(k.ak)document.getElementById('cb-ak').value=k.ak;
       if(k.as)document.getElementById('cb-as').value=k.as;
       document.getElementById('cb-tn').checked=k.tn;
+      newsId=id; newsTitle=title;
       document.getElementById('cb-res').style.display='none';
       document.getElementById('cb-trade').style.display='flex';
     };
 
+    document.getElementById('cb-px').onclick=hidePopup;
+    document.getElementById('cb-pre').onclick=function(){
+      pb.innerHTML='<div class="cb-load">🔄 重新分析...</div>'; pa.style.display='none';
+      go(newsId,true,newsTitle,newsUrl);
+    };
+    document.getElementById('cb-ptr').onclick=function(){
+      if(strat)window.__cbOpenTrade(strat,newsId,newsTitle);
+    };
     document.getElementById('cb-nc').onclick=function(){document.getElementById('cb-trade').style.display='none';};
     document.getElementById('cb-cf').onclick=async function(){
       var ak=document.getElementById('cb-ak').value.trim(),as=document.getElementById('cb-as').value.trim(),sym=document.getElementById('cb-sym').value.trim();
@@ -274,18 +372,32 @@
       }catch(e){var el=document.getElementById('cb-res');el.style.display='block';el.className='res err';el.textContent='❌ '+e.message;}
       this.textContent='确认下单';this.disabled=false;
     };
-    document.addEventListener('keydown',function(e){if(e.key==='Escape')document.getElementById('cb-trade').style.display='none';});
-    // Handle inline trade buttons injected by TypeScript (event delegation)
+
+    // Event delegation for cb-news-btn (per-item 🤖 button injected by TypeScript)
+    document.addEventListener('click',function(e){
+      var btn=e.target.closest('.cb-news-btn');
+      if(!btn)return;
+      e.preventDefault(); e.stopPropagation();
+      var title=btn.dataset.title||'';
+      var url=btn.dataset.url||'';
+      var id=btn.dataset.id||title.slice(0,12).replace(/[^a-z0-9]/gi,'');
+      showPopup(btn,title,id,url);
+    });
+
+    // Event delegation for cb-inline-trade-btn (strategy ⚡ button in panel summary)
     document.addEventListener('click',function(e){
       var btn=e.target.closest('.cb-inline-trade-btn');
       if(!btn)return;
       e.stopPropagation();
       try{
         var s=JSON.parse(btn.dataset.strategy||'{}');
-        var id=btn.dataset.id||'';
-        var title=btn.dataset.title||'';
-        if(s&&s.asset)window.__cbOpenTrade(s,id,title);
-      }catch(ex){console.error('cb-inline-trade-btn parse error',ex);}
+        if(s&&s.asset)window.__cbOpenTrade(s,btn.dataset.id||'',btn.dataset.title||'');
+      }catch(ex){}
+    });
+
+    popup.addEventListener('mouseleave',function(e){if(!popup.contains(e.relatedTarget))hidePopup();});
+    document.addEventListener('keydown',function(e){
+      if(e.key==='Escape'){hidePopup();document.getElementById('cb-trade').style.display='none';}
     });
   })();
   </script>
