@@ -208,12 +208,12 @@
 
 
 
-  <!-- Clawberg v5 -->
+
+  <!-- Clawberg v6 — buttons injected by TypeScript, panel here -->
   <style>
-    .item{position:relative!important}
-    .cb-btn{position:absolute;right:4px;top:50%;transform:translateY(-50%);z-index:9999;font-size:12px;cursor:pointer;opacity:0;transition:opacity .12s;background:#0d0d1e;border:1px solid #2a2a5e;border-radius:3px;padding:1px 4px;line-height:1.5;user-select:none}
-    .item:hover .cb-btn{opacity:1}
-    #cb-panel{position:fixed;z-index:99999;width:320px;background:#0a0a0f;border:1px solid #2a2a5e;border-radius:10px;box-shadow:0 8px 40px rgba(80,40,200,.35);padding:14px;display:none;color:#e0e0ff;font:12px system-ui,sans-serif}
+    .cb-news-btn{background:none;border:none;cursor:pointer;font-size:12px;padding:1px 3px;opacity:0;transition:opacity .12s;vertical-align:middle;margin-left:4px}
+    .item:hover .cb-news-btn{opacity:1}
+    #cb-panel{position:fixed;z-index:99999;width:320px;background:#0a0a0f;border:1px solid #2a2a5e;border-radius:10px;box-shadow:0 8px 40px rgba(80,40,200,.35);padding:14px;display:none;color:#e0e0ff;font:12px system-ui,sans-serif;pointer-events:auto}
     #cb-panel .cbh{font-size:10px;color:#555;margin-bottom:8px;display:flex;justify-content:space-between;letter-spacing:1px}
     #cb-panel .cbt{font-size:12px;color:#888;margin-bottom:10px;line-height:1.4;max-height:36px;overflow:hidden}
     #cb-panel .cbg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:8px}
@@ -227,7 +227,6 @@
     #cb-panel .cb-tbtn{flex:1;background:#1a0d2e;border:1px solid #a855f7;color:#c084fc;padding:7px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600}
     #cb-panel .cb-rbtn{background:#111;border:1px solid #333;color:#666;padding:7px 10px;border-radius:6px;cursor:pointer;font-size:11px}
     #cb-panel .cb-x{cursor:pointer;color:#333;font-size:14px;padding:2px 5px;border-radius:3px}
-    #cb-panel .cb-x:hover{color:#aaa;background:#1a1a2e}
     #cb-panel .cb-load{text-align:center;color:#444;padding:18px 0;font-size:12px}
     #cb-trade{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center}
     #cb-trade .box{background:#0a0a0f;border:1px solid #2a2a5e;border-radius:12px;padding:22px;width:360px;color:#e0e0ff;font:13px system-ui,sans-serif}
@@ -266,8 +265,8 @@
   </div>
   <script>
   (function(){
-    var S='/api/clawberg-strategy', T='/api/clawberg-trade';
-    var strat=null, newsId=null, newsTitle='';
+    var S='/api/clawberg-strategy',T='/api/clawberg-trade';
+    var strat=null,newsId=null,newsTitle='';
     var panel=document.getElementById('cb-panel');
     var body=document.getElementById('cb-b');
     var acts=document.getElementById('cb-a');
@@ -275,39 +274,38 @@
 
     function keys(){return{ak:localStorage.getItem('cb_ak')||'',as:localStorage.getItem('cb_as')||'',tn:localStorage.getItem('cb_tn')==='true'}}
 
-    function pos(btn){
-      panel.style.display='block';
-      var r=btn.getBoundingClientRect(),fw=320,fh=340;
-      var l=r.left-fw-10, t=r.top-10;
-      if(l<10)l=r.right+10;
-      if(l+fw>window.innerWidth-10)l=window.innerWidth-fw-10;
-      if(t+fh>window.innerHeight-10)t=window.innerHeight-fh-10;
-      if(t<10)t=10;
-      panel.style.left=l+'px'; panel.style.top=t+'px';
-    }
-
-    function show(btn, title, id, url){
+    window.__cbShow=function(btn){
+      var title=btn.dataset.title||'';
+      var url=btn.dataset.url||'';
+      var id=btn.dataset.id||btoa(title.slice(0,40)).replace(/[^a-z0-9]/gi,'').slice(0,14);
       newsId=id; newsTitle=title;
       titleEl.textContent=title.slice(0,90);
       body.innerHTML='<div class="cb-load">📡 生成策略中...</div>';
       acts.style.display='none';
-      pos(btn);
-      go(id, false, title, url);
-    }
+      panel.style.display='block';
+      var r=btn.getBoundingClientRect(),fw=320,fh=340;
+      var l=r.left-fw-10,t=r.top-10;
+      if(l<10)l=r.right+10;
+      if(l+fw>window.innerWidth-10)l=window.innerWidth-fw-10;
+      if(t+fh>window.innerHeight-10)t=window.innerHeight-fh-10;
+      if(t<10)t=10;
+      panel.style.left=l+'px';panel.style.top=t+'px';
+      go(id,false,title,url);
+    };
 
-    function hide(){panel.style.display='none'; strat=null;}
+    function hide(){panel.style.display='none';strat=null;}
 
-    async function submit(title, id, url){
+    async function submit(title,id,url){
       try{await fetch('/api/clawberg-submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,title,url:url||'https://worldmonitor-clawberg.vercel.app/#'+id,agentId:'worldmonitor',sourceType:'media'})})}catch(e){}
     }
 
-    async function go(id, force, title, url){
+    async function go(id,force,title,url){
       try{
         var r=await fetch(S,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,force})});
         var d=await r.json();
         if(d.strategy){strat=d.strategy;render(d.strategy);return;}
         body.innerHTML='<div class="cb-load">📤 提交到Clawberg...</div>';
-        await submit(title||id, id, url);
+        await submit(title||id,id,url);
         var r2=await fetch(S,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,force:true})});
         var d2=await r2.json();
         if(d2.strategy){strat=d2.strategy;render(d2.strategy);}
@@ -354,47 +352,8 @@
       }catch(e){var el=document.getElementById('cb-res');el.style.display='block';el.className='res err';el.textContent='❌ '+e.message;}
       this.textContent='确认下单';this.disabled=false;
     };
-
     panel.addEventListener('mouseleave',function(e){if(!panel.contains(e.relatedTarget))hide();});
     document.addEventListener('keydown',function(e){if(e.key==='Escape'){hide();document.getElementById('cb-trade').style.display='none';}});
-
-    // Inject 🤖 button - use setInterval as fallback for dynamic content
-    function inject(item){
-      if(item.querySelector('.cb-btn'))return;
-      var a=item.querySelector('a.item-title')||item.querySelector('.item-title');
-      if(!a)return;
-      var url=a.href||'';
-      var title=(a.textContent||a.innerText||'').trim();
-      if(!title)return;
-      var id=item.dataset.clusterId||btoa(unescape(encodeURIComponent(title.slice(0,40)))).replace(/[^a-z0-9]/gi,'').slice(0,14);
-      var btn=document.createElement('span');
-      btn.className='cb-btn';
-      btn.textContent='🤖';
-      btn.title='Clawberg策略';
-      btn.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();show(btn,title,id,url);},true);
-      item.appendChild(btn);
-    }
-
-    function scan(){
-      document.querySelectorAll('.item').forEach(function(item){
-        if(item.querySelector('a.item-title')||item.querySelector('.item-title'))inject(item);
-      });
-    }
-
-    // Run immediately and on interval
-    scan();
-    setInterval(scan, 1000);
-
-    // Also MutationObserver as primary
-    new MutationObserver(function(ms){
-      ms.forEach(function(m){
-        m.addedNodes.forEach(function(n){
-          if(n.nodeType!==1)return;
-          if(n.classList&&n.classList.contains('item'))inject(n);
-          else n.querySelectorAll&&n.querySelectorAll('.item').forEach(inject);
-        });
-      });
-    }).observe(document.body,{childList:true,subtree:true});
   })();
   </script>
 
