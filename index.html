@@ -205,14 +205,15 @@
     <script type="module" src="/src/main.ts"></script>
   
 
-  <!-- Clawberg Floating Panel v2 -->
+
+  <!-- Clawberg Floating Panel v3 -->
   <style>
     #clawberg-float {
       position: fixed; z-index: 99999; width: 330px;
       background: #0a0a0f; border: 1px solid #2a2a5e; border-radius: 10px;
       box-shadow: 0 8px 40px rgba(80,40,200,0.3); padding: 14px;
       display: none; color: #e0e0ff; font-family: system-ui,sans-serif; font-size: 12px;
-      pointer-events: auto; transition: opacity .15s;
+      pointer-events: auto;
     }
     #clawberg-float .cb-header { font-size: 10px; color: #555; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; letter-spacing: 1px; }
     #clawberg-float .cb-title { font-size: 12px; color: #888; margin-bottom: 10px; line-height: 1.4; max-height: 36px; overflow: hidden; }
@@ -229,17 +230,16 @@
     #clawberg-float .cb-gen-btn { background: #111; border: 1px solid #333; color: #666; padding: 7px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; }
     #clawberg-float .cb-loading { text-align: center; color: #444; padding: 18px 0; font-size: 12px; }
     #clawberg-float .cb-conf-low { color: #f59e0b; } #clawberg-float .cb-conf-medium { color: #60a5fa; } #clawberg-float .cb-conf-high { color: #4ade80; }
-    #clawberg-float .cb-close { cursor: pointer; color: #333; font-size: 14px; padding: 2px 4px; border-radius: 3px; }
+    #clawberg-float .cb-close { cursor: pointer; color: #333; font-size: 14px; padding: 2px 5px; border-radius: 3px; }
     #clawberg-float .cb-close:hover { color: #aaa; background: #1a1a2e; }
-    /* Trigger icon on news items */
-    .item .cb-trigger {
-      display: inline-block; margin-left: 6px; font-size: 11px; cursor: pointer;
-      opacity: 0; transition: opacity .2s; vertical-align: middle;
+    .cb-trigger-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 10px; cursor: pointer; opacity: 0; transition: opacity .15s;
       background: #0d0d1e; border: 1px solid #2a2a5e; border-radius: 3px;
-      padding: 1px 4px; color: #6060cc; user-select: none;
+      padding: 1px 5px; color: #7070dd; user-select: none; margin-left: 6px;
+      vertical-align: middle; line-height: 1.4; white-space: nowrap; flex-shrink: 0;
     }
-    .item:hover .cb-trigger { opacity: 1; }
-    /* Trade modal */
+    .item:hover .cb-trigger-btn { opacity: 1; }
     #clawberg-trade-modal {
       position: fixed; inset: 0; z-index: 100000; background: rgba(0,0,0,0.85);
       display: none; align-items: center; justify-content: center;
@@ -263,10 +263,7 @@
   </style>
 
   <div id="clawberg-float">
-    <div class="cb-header">
-      <span>⚡ CLAWBERG SIGNAL</span>
-      <span class="cb-close" id="cb-close-btn">✕</span>
-    </div>
+    <div class="cb-header"><span>⚡ CLAWBERG SIGNAL</span><span class="cb-close" id="cb-close-btn">✕</span></div>
     <div class="cb-title" id="cb-news-title"></div>
     <div id="cb-body"><div class="cb-loading">载入中...</div></div>
     <div class="cb-actions" id="cb-actions-bar" style="display:none">
@@ -282,11 +279,11 @@
       <label>交易标的</label><input id="cb-symbol" placeholder="e.g. BTCUSDT" />
       <label>买入金额 (USDT)</label><input id="cb-qty" type="number" value="100" min="1" />
       <label>方向</label>
-      <select id="cb-side"><option value="BUY">做多 (BUY)</option><option value="SELL">做空 (SELL)</option></select>
+      <select id="cb-side"><option value="BUY">做多 BUY</option><option value="SELL">做空 SELL</option></select>
       <label>API Key</label><input id="cb-apikey" type="password" placeholder="Binance API Key" />
       <label>API Secret</label><input id="cb-apisecret" type="password" placeholder="Binance API Secret" />
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-        <input type="checkbox" id="cb-testnet" style="width:auto;margin:0" /> 使用测试网 (Testnet)
+        <input type="checkbox" id="cb-testnet" style="width:auto;margin:0" /> 使用测试网 Testnet
       </label>
       <div class="cb-modal-btns">
         <button class="cb-cancel-btn" id="cb-trade-cancel">取消</button>
@@ -300,9 +297,7 @@
   (function() {
     const STRATEGY_API = '/api/clawberg-strategy';
     const TRADE_API = '/api/clawberg-trade';
-    let currentStrategy = null;
-    let currentNewsId = null;
-    let currentNewsTitle = '';
+    let currentStrategy = null, currentNewsId = null, currentNewsTitle = '';
 
     const floatEl = document.getElementById('clawberg-float');
     const bodyEl = document.getElementById('cb-body');
@@ -310,80 +305,56 @@
     const titleEl = document.getElementById('cb-news-title');
 
     function getKeys() {
-      return {
-        apiKey: localStorage.getItem('cb_apiKey') || '',
-        apiSecret: localStorage.getItem('cb_apiSecret') || '',
-        testnet: localStorage.getItem('cb_testnet') === 'true'
-      };
+      return { apiKey: localStorage.getItem('cb_apiKey')||'', apiSecret: localStorage.getItem('cb_apiSecret')||'', testnet: localStorage.getItem('cb_testnet')==='true' };
     }
 
-    function showFloat(anchorEl, title, newsId) {
-      currentNewsId = newsId;
-      currentNewsTitle = title;
-      titleEl.textContent = title.slice(0, 90);
+    function showFloat(anchorEl, title, newsId, newsUrl) {
+      currentNewsId = newsId; currentNewsTitle = title;
+      titleEl.textContent = title.slice(0,90);
       bodyEl.innerHTML = '<div class="cb-loading">📡 生成策略中...</div>';
       actionsEl.style.display = 'none';
       floatEl.style.display = 'block';
-
-      // Position relative to trigger element
       const rect = anchorEl.getBoundingClientRect();
-      const w = 330, h = 320;
-      let left = rect.right + 10;
-      let top = rect.top - 10;
-      if (left + w > window.innerWidth - 10) left = rect.left - w - 10;
+      const w=330, h=340;
+      let left = rect.right+10, top = rect.top-10;
+      if (left+w > window.innerWidth-10) left = rect.left-w-10;
       if (left < 10) left = 10;
-      if (top + h > window.innerHeight - 10) top = window.innerHeight - h - 10;
+      if (top+h > window.innerHeight-10) top = window.innerHeight-h-10;
       if (top < 10) top = 10;
-      floatEl.style.left = left + 'px';
-      floatEl.style.top = top + 'px';
-
-      fetchStrategy(newsId, false);
+      floatEl.style.left = left+'px'; floatEl.style.top = top+'px';
+      fetchStrategy(newsId, false, title, newsUrl);
     }
 
-    function hideFloat() { floatEl.style.display = 'none'; currentStrategy = null; }
+    function hideFloat() { floatEl.style.display='none'; currentStrategy=null; }
 
-    async function fetchStrategy(id, force) {
-      try {
-        const r = await fetch(STRATEGY_API, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, force })
-        });
-        const d = await r.json();
-        if (d.strategy) {
-          currentStrategy = d.strategy;
-          renderStrategy(d.strategy);
-        } else {
-          // Not in Clawberg — submit it first, then generate
-          bodyEl.innerHTML = '<div class="cb-loading">📤 提交到Clawberg并生成策略...</div>';
-          await submitToClawberg(currentNewsTitle, id);
-          const r2 = await fetch(STRATEGY_API, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, force: true })
-          });
-          const d2 = await r2.json();
-          if (d2.strategy) { currentStrategy = d2.strategy; renderStrategy(d2.strategy); }
-          else { bodyEl.innerHTML = '<div class="cb-loading" style="color:#f59e0b">⚠️ 无法生成策略</div>'; }
-        }
-      } catch(e) {
-        bodyEl.innerHTML = '<div class="cb-loading" style="color:#f87171">❌ ' + e.message + '</div>';
-      }
-    }
-
-    async function submitToClawberg(title, id) {
+    async function submitToClawberg(title, id, url) {
       try {
         await fetch('/api/clawberg-submit', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, title, url: 'https://worldmonitor-clawberg.vercel.app/#' + id, agentId: 'worldmonitor', sourceType: 'media' })
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ id, title, url: url||('https://worldmonitor-clawberg.vercel.app/#'+id), agentId:'worldmonitor', sourceType:'media' })
         });
       } catch(e) {}
     }
 
+    async function fetchStrategy(id, force, title, url) {
+      try {
+        const r = await fetch(STRATEGY_API, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id, force}) });
+        const d = await r.json();
+        if (d.strategy) { currentStrategy=d.strategy; renderStrategy(d.strategy); return; }
+        // not in clawberg yet — submit then retry
+        bodyEl.innerHTML = '<div class="cb-loading">📤 提交到Clawberg并生成策略...</div>';
+        await submitToClawberg(title||id, id, url);
+        const r2 = await fetch(STRATEGY_API, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id, force:true}) });
+        const d2 = await r2.json();
+        if (d2.strategy) { currentStrategy=d2.strategy; renderStrategy(d2.strategy); }
+        else { bodyEl.innerHTML='<div class="cb-loading" style="color:#f59e0b">⚠️ 无法生成策略</div>'; }
+      } catch(e) { bodyEl.innerHTML='<div class="cb-loading" style="color:#f87171">❌ '+e.message+'</div>'; }
+    }
+
     function renderStrategy(s) {
-      const dir = s.direction === 'long' ? '<span class="cb-long">🟢 做多</span>' : '<span class="cb-short">🔴 做空</span>';
+      const dir = s.direction==='long' ? '<span class="cb-long">🟢 做多</span>' : '<span class="cb-short">🔴 做空</span>';
       const conf = `<span class="cb-conf-${s.confidence}">${s.confidence}</span>`;
-      const alts = s.alternates && s.alternates.length
-        ? '<div class="cb-alts">备选: ' + s.alternates.map(a => `<span>${a.direction==='long'?'🟢':'🔴'} ${a.asset}</span>`).join(' ') + '</div>'
-        : '';
+      const alts = s.alternates&&s.alternates.length ? '<div class="cb-alts">备选: '+s.alternates.map(a=>`<span>${a.direction==='long'?'🟢':'🔴'} ${a.asset}</span>`).join(' ')+'</div>' : '';
       bodyEl.innerHTML = `
         <div class="cb-grid">
           <div class="cb-cell"><div class="lb">标的</div><div class="vl">${s.asset}</div></div>
@@ -392,106 +363,111 @@
           <div class="cb-cell"><div class="lb">止损</div><div class="vl">${s.stopLoss}</div></div>
           <div class="cb-cell"><div class="lb">目标</div><div class="vl">${s.takeProfit}</div></div>
           <div class="cb-cell"><div class="lb">持仓</div><div class="vl">${s.holdDuration}</div></div>
-        </div>
-        ${alts}
+        </div>${alts}
         <div class="cb-rationale">💡 ${s.rationale}</div>`;
-      actionsEl.style.display = 'flex';
+      actionsEl.style.display='flex';
     }
 
     document.getElementById('cb-close-btn').addEventListener('click', hideFloat);
     document.getElementById('cb-regen-btn').addEventListener('click', function() {
-      bodyEl.innerHTML = '<div class="cb-loading">🔄 重新分析...</div>';
-      actionsEl.style.display = 'none';
-      fetchStrategy(currentNewsId, true);
+      bodyEl.innerHTML='<div class="cb-loading">🔄 重新分析...</div>'; actionsEl.style.display='none';
+      fetchStrategy(currentNewsId, true, currentNewsTitle);
     });
     document.getElementById('cb-open-trade').addEventListener('click', function() {
       if (!currentStrategy) return;
-      const s = currentStrategy;
-      const keys = getKeys();
-      document.getElementById('cb-trade-summary').innerHTML =
-        `${s.direction==='long'?'🟢 做多':'🔴 做空'} <b>${s.asset}</b> · 止损 ${s.stopLoss} · 目标 ${s.takeProfit}`;
-      const sym = s.asset.replace(/[/\-]/g, '');
-      document.getElementById('cb-symbol').value = /USDT$/.test(sym) ? sym : sym + 'USDT';
-      document.getElementById('cb-side').value = s.direction === 'long' ? 'BUY' : 'SELL';
-      if (keys.apiKey) document.getElementById('cb-apikey').value = keys.apiKey;
-      if (keys.apiSecret) document.getElementById('cb-apisecret').value = keys.apiSecret;
-      document.getElementById('cb-testnet').checked = keys.testnet;
-      document.getElementById('cb-trade-result').style.display = 'none';
-      document.getElementById('clawberg-trade-modal').style.display = 'flex';
+      const s=currentStrategy, keys=getKeys();
+      document.getElementById('cb-trade-summary').innerHTML=`${s.direction==='long'?'🟢 做多':'🔴 做空'} <b>${s.asset}</b> · 止损 ${s.stopLoss} · 目标 ${s.takeProfit}`;
+      const sym=s.asset.replace(/[/\-]/g,'');
+      document.getElementById('cb-symbol').value=/USDT$/.test(sym)?sym:sym+'USDT';
+      document.getElementById('cb-side').value=s.direction==='long'?'BUY':'SELL';
+      if(keys.apiKey) document.getElementById('cb-apikey').value=keys.apiKey;
+      if(keys.apiSecret) document.getElementById('cb-apisecret').value=keys.apiSecret;
+      document.getElementById('cb-testnet').checked=keys.testnet;
+      document.getElementById('cb-trade-result').style.display='none';
+      document.getElementById('clawberg-trade-modal').style.display='flex';
     });
-    document.getElementById('cb-trade-cancel').addEventListener('click', function() {
-      document.getElementById('clawberg-trade-modal').style.display = 'none';
-    });
+    document.getElementById('cb-trade-cancel').addEventListener('click', function() { document.getElementById('clawberg-trade-modal').style.display='none'; });
     document.getElementById('cb-trade-confirm').addEventListener('click', async function() {
-      const apiKey = document.getElementById('cb-apikey').value.trim();
-      const apiSecret = document.getElementById('cb-apisecret').value.trim();
-      const symbol = document.getElementById('cb-symbol').value.trim();
-      const quoteQty = parseFloat(document.getElementById('cb-qty').value);
-      const side = document.getElementById('cb-side').value;
-      const testnet = document.getElementById('cb-testnet').checked;
-      if (!apiKey || !apiSecret || !symbol) { alert('请填写完整信息'); return; }
-      localStorage.setItem('cb_apiKey', apiKey);
-      localStorage.setItem('cb_apiSecret', apiSecret);
-      localStorage.setItem('cb_testnet', String(testnet));
-      this.textContent = '提交中...'; this.disabled = true;
+      const apiKey=document.getElementById('cb-apikey').value.trim();
+      const apiSecret=document.getElementById('cb-apisecret').value.trim();
+      const symbol=document.getElementById('cb-symbol').value.trim();
+      const quoteQty=parseFloat(document.getElementById('cb-qty').value);
+      const side=document.getElementById('cb-side').value;
+      const testnet=document.getElementById('cb-testnet').checked;
+      if(!apiKey||!apiSecret||!symbol){alert('请填写完整信息');return;}
+      localStorage.setItem('cb_apiKey',apiKey); localStorage.setItem('cb_apiSecret',apiSecret); localStorage.setItem('cb_testnet',String(testnet));
+      this.textContent='提交中...'; this.disabled=true;
       try {
-        const r = await fetch(TRADE_API, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ apiKey, apiSecret, symbol, side, quoteQty, testnet, newsId: currentNewsId, newsTitle: currentNewsTitle })
-        });
-        const d = await r.json();
-        const el = document.getElementById('cb-trade-result');
-        el.style.display = 'block';
-        el.className = 'cb-result ' + (d.ok ? 'ok' : 'err');
-        el.textContent = d.ok ? '✅ 下单成功 · 订单ID: ' + (d.order?.binanceOrderId || 'N/A') : '❌ ' + (d.order?.error || d.error || '下单失败');
+        const r=await fetch(TRADE_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({apiKey,apiSecret,symbol,side,quoteQty,testnet,newsId:currentNewsId,newsTitle:currentNewsTitle})});
+        const d=await r.json();
+        const el=document.getElementById('cb-trade-result');
+        el.style.display='block'; el.className='cb-result '+(d.ok?'ok':'err');
+        el.textContent=d.ok?'✅ 下单成功 · '+( d.order?.binanceOrderId||'N/A'):'❌ '+(d.order?.error||d.error||'下单失败');
       } catch(e) {
-        const el = document.getElementById('cb-trade-result');
-        el.style.display = 'block'; el.className = 'cb-result err';
-        el.textContent = '❌ ' + e.message;
+        const el=document.getElementById('cb-trade-result');
+        el.style.display='block'; el.className='cb-result err'; el.textContent='❌ '+e.message;
       }
-      this.textContent = '确认下单'; this.disabled = false;
+      this.textContent='确认下单'; this.disabled=false;
     });
 
-    floatEl.addEventListener('mouseleave', function(e) {
-      if (!e.relatedTarget || !floatEl.contains(e.relatedTarget)) hideFloat();
-    });
+    floatEl.addEventListener('mouseleave', function(e) { if(!floatEl.contains(e.relatedTarget)) hideFloat(); });
     document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') { hideFloat(); document.getElementById('clawberg-trade-modal').style.display = 'none'; }
+      if(e.key==='Escape'){hideFloat();document.getElementById('clawberg-trade-modal').style.display='none';}
     });
 
-    // Inject ⚡ trigger button into each .item via MutationObserver
-    function injectTriggers(root) {
-      root.querySelectorAll('.item').forEach(function(item) {
-        if (item.querySelector('.cb-trigger')) return; // already injected
-        const titleEl = item.querySelector('.item-title');
-        if (!titleEl) return;
-        const btn = document.createElement('span');
-        btn.className = 'cb-trigger';
-        btn.textContent = '⚡';
-        btn.title = 'Clawberg策略';
-        btn.addEventListener('click', function(e) {
-          e.preventDefault(); e.stopPropagation();
-          const title = titleEl.textContent || titleEl.innerText || '';
-          const newsId = item.dataset.clusterId || btoa(title.slice(0, 40)).replace(/[^a-z0-9]/gi, '').slice(0, 12);
-          showFloat(btn, title.trim(), newsId);
-        });
-        titleEl.parentNode.insertBefore(btn, titleEl.nextSibling);
+    // Inject ⚡ button into each news item
+    // Target: inside .item, append into .cluster-meta or .item-time span, or after .item-title
+    function injectTrigger(item) {
+      if (item.querySelector('.cb-trigger-btn')) return; // already done
+      // must have .item-title (an <a> element with href)
+      const titleLink = item.querySelector('a.item-title');
+      if (!titleLink) return;
+      const newsUrl = titleLink.href || '';
+      const title = titleLink.textContent || titleLink.innerText || '';
+      const clusterId = item.dataset.clusterId;
+      const newsId = clusterId || btoa(encodeURIComponent(title.slice(0,40))).replace(/[^a-z0-9]/gi,'').slice(0,14);
+
+      const btn = document.createElement('span');
+      btn.className = 'cb-trigger-btn';
+      btn.textContent = '⚡ signal';
+      btn.title = 'Clawberg策略分析';
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation(); // prevent worldmonitor's own click handlers
+        e.stopImmediatePropagation();
+        showFloat(btn, title.trim(), newsId, newsUrl);
+      });
+
+      // inject into .cluster-meta if exists, otherwise after .item-title
+      const meta = item.querySelector('.cluster-meta') || item.querySelector('.item-time')?.parentNode;
+      if (meta && item.querySelector('.cluster-meta')) {
+        item.querySelector('.cluster-meta').appendChild(btn);
+      } else {
+        titleLink.insertAdjacentElement('afterend', btn);
+      }
+    }
+
+    function injectAll(root) {
+      (root.querySelectorAll ? root : document).querySelectorAll('.item').forEach(function(item) {
+        // only items that are direct news items (have .item-title), not panel wrappers
+        if (item.querySelector('a.item-title')) injectTrigger(item);
       });
     }
 
-    // Watch for dynamically added items
     const observer = new MutationObserver(function(mutations) {
       mutations.forEach(function(m) {
         m.addedNodes.forEach(function(node) {
-          if (node.nodeType === 1) {
-            if (node.classList && node.classList.contains('item')) injectTriggers(node.parentNode);
-            else injectTriggers(node);
+          if (node.nodeType !== 1) return;
+          if (node.classList && node.classList.contains('item') && node.querySelector('a.item-title')) {
+            injectTrigger(node);
+          } else {
+            injectAll(node);
           }
         });
       });
     });
     observer.observe(document.body, { childList: true, subtree: true });
-    injectTriggers(document.body);
+    injectAll(document.body);
   })();
   </script>
 
