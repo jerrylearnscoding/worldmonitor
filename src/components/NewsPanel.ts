@@ -148,7 +148,7 @@ export class NewsPanel extends Panel {
     const title = (titleEl.textContent || '').trim();
     const url = titleEl.href || '';
     const clusterId = firstItem.dataset.clusterId;
-    const id = clusterId || btoa(encodeURIComponent(title.slice(0, 40))).replace(/[^a-z0-9]/gi, '').slice(0, 14);
+    const id = clusterId || title.slice(0, 14).replace(/[^a-z0-9]/gi, '') || 'unknown';
 
     // Show loading in summary container
     this.isSummarizing = true;
@@ -183,7 +183,10 @@ export class NewsPanel extends Panel {
             <span style="color:#aaa;margin-right:10px">止损 ${s.stopLoss} · 目标 ${s.takeProfit} · ${s.confidence}</span>
             <span style="color:#555">${alts}</span>
             <br><span style="color:#555;font-size:11px">💡 ${s.rationale}</span>
-            <button onclick="window.__cbOpenTrade && window.__cbOpenTrade(${JSON.stringify(s).replace(/"/g,'&quot;')}, '${id.replace(/'/g, '')}', '${title.replace(/'/g, '').replace(/"/g, '').slice(0, 50)}')"
+            <button class="cb-inline-trade-btn"
+              data-strategy='${escapeHtml(JSON.stringify(s))}'
+              data-id="${escapeHtml(id)}"
+              data-title="${escapeHtml(title.slice(0, 50))}"
               style="margin-left:10px;background:#1a0d2e;border:1px solid #a855f7;color:#c084fc;padding:3px 10px;border-radius:4px;cursor:pointer;font-size:11px">⚡ 下单</button>
           </div>`;
       } else {
